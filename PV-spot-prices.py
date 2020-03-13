@@ -6,8 +6,8 @@ Created on Thu Feb 20 23:06:39 2020
 """
 
 import pandas as pd
-# import datetime as dt
-import numpy as np
+from datetime import datetime as dt
+#import numpy as np
 from pathlib import Path
 from openpyxl import load_workbook
 from openpyxl import Workbook
@@ -25,8 +25,8 @@ def get_data(url):
     #print(type(response.status_code))
     if response.status_code == 200 :
         soup=bs(response.text,"html.parser")
-        update_date_tag=soup.find('strong')
-        if len(update_date_tag)>0:
+        date_tag=soup.find_all('span')
+        if len(date_tag)>0:
             print("Date request is successful...")
         else:
             print("Something wrong with getting upload date")
@@ -37,32 +37,15 @@ def get_data(url):
             print("Something wrong with downloading data tables")
     else:
         print("Request was not successful")
-    return update_date_tag, tables_list
+    return date_tag, tables_list
 
-# def check_data(output_filename, update_date_str):
-#     """unit
-#     based on the update date checks if the data is relevant.
-
-#     """
-#     with pd.ExcelFile(output_filename) as xlsx_file:
-#         for sheet in xlsx_file.sheet_names:
-#             if sheet == update_date_str:
-#                 data_status = False
-#                 print("Data from this date already exists. File will not be overwritten.")
-#                 break
-#             else:
-#                 data_status = True
-#         if data_status==True:
-#             print("Data is relevant")
-#     return(data_status)
-
-def check_data_2(wb, update_date_str):
+def check_data_2(wb, date_str):
     """
     based on the update date value checks if the data is relevant.
 
     """
     for sheet_name in wb.sheetnames:
-        if sheet_name == update_date_str:
+        if sheet_name == date_str:
             data_status=False
             print("Data from this date already exists. File will not be overwritten.")
             break
@@ -72,29 +55,39 @@ def check_data_2(wb, update_date_str):
         print("Data is relevant")
     return(data_status)
 
+def datetag_to_datetime(date_tag):
+    """
+    converts downloaded date tag to a datetime object
+    """
+    a=str(date_tag).find('>', 0)+1
+    b=str(date_tag).find('<', 1)
+    string=str(date_tag)[a:b]
+    string_cut=string[0:string.find(",")]+string[string.find(",")+1:]
+    date=dt.strptime(string_cut, '%B %d %Y')
+    return date
+    
 def swap_headers(ws, header_old, header_new):
     """
     changes columns names inside the given worksheet  
     """
-    
     for row in ws.rows:
         for cell in row:
             if cell.value==header_old:
                 cell.value=header_new
                 
-def add_new_data_to_column(ws, df, update_date_str):
+def add_new_data_to_column(ws, df, date_str):
     """
     adds new data to the table
     """
     max_col=ws.max_column
     r=0
     for j in range(len(df.columns)):
-        ws.cell(row=4+r, column=max_col+1).value=update_date_str
+        ws.cell(row=4+r, column=max_col+1).value=date_str
         for i in range(len(df.iloc[:,j])):
             ws.cell(row=i+5+r, column=max_col+1).value=df.iloc[:,j][i]
         r=r+i+4
 
-def create_main_tables_structure(ws, df, update_date_str):
+def create_main_tables_structure(ws, df, date_str):
     """
     generates main table structure
     """
@@ -126,29 +119,16 @@ def create_main_tables_structure(ws, df, update_date_str):
     ws.cell(row=ws.max_row+1, column=1).value='***US and Indian module prices showed on the PV InfoLink website is after-tax price (punitive tariffs). Others are FOB price.'
     ws.merge_cells(start_row=ws.max_row, start_column=1, end_row=ws.max_row, end_column=ws.max_column)
     
-    swap_headers(ws, "Low Price", update_date_str)
-    swap_headers(ws, "Average Price", update_date_str)
-    swap_headers(ws, "High Price", update_date_str)
+    swap_headers(ws, "Low Price", date_str)
+    swap_headers(ws, "Average Price", date_str)
+    swap_headers(ws, "High Price", date_str)
     ws.column_dimensions['B'].width=51
     ws.column_dimensions['A'].width=16
     ws.column_dimensions['D'].width=10
     ws.row_dimensions[1].height=30
-                
-# def add_new_data_to_xlsx(output_filename, update_date_str, tables_list):
-    
-#     """
-#      writes data to a new sheet of .xlsx file
-#     """
-#     with pd.ExcelWriter(output_filename, engine="openpyxl", mode='a') as writer:
-#         i=0
-#         for df_lists in tables_list:
-#             df_lists.to_excel(writer, update_date_str, startrow=i+1, merge_cells=False)
-#             i=i+len(df_lists.index)+2
-#         print("Data is added to sheet", update_date_str, "Please check the file")
 
 
-#creating output file
-        
+#creating output file if needed 
 filename="Spot_prices.xlsx"
 output_file=Path(filename)
 if output_file.is_file():
@@ -165,16 +145,20 @@ else:
     print("Output file", filename, "has been created...\nDownloading Data...")
 
 #downloading data
-url="https://en.pvinfolink.com/post.php?sn=2"
+url="https://www.infolink-group.com/en/solar/spot-price"
 requested_data=get_data(url)
-update_date_tag=requested_data[0]
-update_date_str=str(update_date_tag)[17:27]
-# dummy_date="2004-15-34"
-# update_date_str=dummy_date
-list_of_df=requested_data[1]
+
+#getting update date and formating as a datetime object
+date_tag=requested_data[0][3]
+date=datetag_to_datetime(date_tag)
+date_str= date.strftime('%d-%m-%Y')
+# dummy_date="11-11-1111"
+# date_str=dummy_date
+
+list_of_df=requested_data[1] #getting tables with spot price data
 
 #checking if the data is relevant
-data_status = check_data_2(wb, update_date_str)
+data_status = check_data_2(wb, date_str)
 
 #data processing and consolidation
 df_all=pd.DataFrame()
@@ -182,22 +166,24 @@ df_all=pd.DataFrame()
 for df in list_of_df:
     df_all=df_all.append(df, ignore_index=True)
 
-df_all.drop(["Change(%)", "Change($)", "Next Week Forecast"],axis=1, inplace=True)
+df_all.drop(["Change(%)", "Change($)", "Price prediction for next week"],axis=1, inplace=True)
 df_all.reset_index(drop=True, inplace=True)
+df_all.rename(columns={'High':'High Price', 'Low':'Low Price','Average price':'Average Price'},  inplace=True)
 
-df_all.rename(columns={'High':'High Price', 'Low':'Low Price','Avg.':'Average Price'},  inplace=True)
-
-category_list=4*["Polysilicon"]+8*["Wafer"]+8*["Cell"]+4*["Module"]+6*["Module by region"]+["Module BOM Materials"]
-unit_list=4*["kg"]+8*["pc"]+18*["W"]+["m2"]  
+category_list=4*["Polysilicon"]+6*["Wafer"]+8*["Cell"]+4*["Module"]+6*["Module by region"]+["Module BOM Materials"]
+unit_list=4*["kg"]+6*["pc"]+18*["W"]+["m2"]  
 
 currency_list=[]    
 for i in range(len(df_all["Item"])):
     currency_list.append(df_all["Item"][i][-4:-1])
-    
+# print(currency_list)
+
 df_all.insert(0, "Category", category_list, True)
 df_all.insert(2, "Currency", currency_list, True)
 df_all.insert(3, "Unit", unit_list, True)
 
+
+#separating
 df_USD=df_all[df_all["Currency"]=="USD"]
 df_USD.reset_index(drop=True, inplace=True)
 df_RMB=df_all[df_all["Currency"]=="RMB"]
@@ -205,29 +191,21 @@ df_RMB.reset_index(drop=True, inplace=True)
 
 #adding new data to a new excel sheet
 if data_status == True:     
-    wb.create_sheet(update_date_str)
-    ws_new=wb[update_date_str]
+    wb.create_sheet(date_str)
+    ws_new=wb[date_str]
     for df in list_of_df:
         for r in dataframe_to_rows(df, index=False, header=True):
             ws_new.append(r)
         ws_new.append([])
-    print("Data is added to sheet", update_date_str, "Please check the file")
+    print("Data is added to sheet", date_str, "Please check the file")
 
 #adding new data to main tables (USD, RMB)
 if data_status == True: 
     if ws_USD['A3'].value==df_USD.columns[-3]+", "+ws_USD.title:
-        add_new_data_to_column(ws_USD, df_USD[["High Price","Average Price","Low Price"]],update_date_str)
-        add_new_data_to_column(ws_RMB, df_RMB[["High Price","Average Price","Low Price"]],update_date_str)
+        add_new_data_to_column(ws_USD, df_USD[["High Price","Average Price","Low Price"]],date_str)
+        add_new_data_to_column(ws_RMB, df_RMB[["High Price","Average Price","Low Price"]],date_str)
     else:
-        create_main_tables_structure(ws_USD, df_USD, update_date_str)
-        create_main_tables_structure(ws_RMB, df_RMB, update_date_str)
+        create_main_tables_structure(ws_USD, df_USD, date_str)
+        create_main_tables_structure(ws_RMB, df_RMB, date_str)
     
 wb.save(filename)
-      
-    
-
-
-
-
-
-
