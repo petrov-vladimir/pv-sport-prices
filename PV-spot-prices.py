@@ -22,19 +22,18 @@ def get_data(url):
     downloads spot price data and its date of update
     """
     response = requests.get(url)
-    #print(type(response.status_code))
     if response.status_code == 200 :
         soup=bs(response.text,"html.parser")
         date_tag=soup.find_all('span')
         if len(date_tag)>0:
-            print("Date request is successful...")
+            pass
         else:
             print("Something wrong with getting upload date")
         tables_list=pd.read_html(url)
         if len(tables_list)>0:
-            print("Data request is successful...")
+            print("Data downloaded successfully")
         else:
-            print("Something wrong with downloading data tables")
+            print("Something wrong with downloading Data. Please try again.")
     else:
         print("Request was not successful")
     return date_tag, tables_list
@@ -47,7 +46,7 @@ def check_data_2(wb, date_str):
     for sheet_name in wb.sheetnames:
         if sheet_name == date_str:
             data_status=False
-            print("Data from this date already exists. File will not be overwritten.")
+            print("Data is not relevant and is already contained in", filename,"." " File won't be overwritten.")
             break
         else:
             data_status = True
@@ -130,7 +129,7 @@ def create_main_tables_structure(ws, df, date_str):
 
 #creating output file if needed 
 filename="Spot_prices.xlsx"
-output_file=Path(filename)
+output_file=Path.cwd() / filename
 if output_file.is_file():
     wb=load_workbook(filename)
     ws_USD=wb["USD"]
@@ -197,7 +196,8 @@ if data_status == True:
         for r in dataframe_to_rows(df, index=False, header=True):
             ws_new.append(r)
         ws_new.append([])
-    print("Data is added to sheet", date_str, "Please check the file")
+    print("Update date:", date_str)    
+    print("Data is added to the correcponding worksheet. Please check the file")
 
 #adding new data to main tables (USD, RMB)
 if data_status == True: 
@@ -209,3 +209,9 @@ if data_status == True:
         create_main_tables_structure(ws_RMB, df_RMB, date_str)
     
 wb.save(filename)
+      
+try:
+    print("Thanks for using this tool. Ha en hyggelig dag!")
+    input("Press enter to exit")
+except SyntaxError:
+    pass
