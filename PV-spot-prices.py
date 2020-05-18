@@ -169,8 +169,8 @@ df_all.drop(["Change(%)", "Change($)", "Price prediction for next week"],axis=1,
 df_all.reset_index(drop=True, inplace=True)
 df_all.rename(columns={'High':'High Price', 'Low':'Low Price','Average price':'Average Price'},  inplace=True)
 
-category_list=4*["Polysilicon"]+6*["Wafer"]+8*["Cell"]+4*["Module"]+6*["Module by region"]+["Module BOM Materials"]
-unit_list=4*["kg"]+6*["pc"]+18*["W"]+["m2"]
+category_list=4*["Polysilicon"]+6*["Wafer"]+8*["Cell"]+6*["Module"]+6*["Module by region"]+["Module BOM Materials"]
+unit_list=4*["kg"]+6*["pc"]+20*["W"]+["m2"]
 
 currency_list=[]
 for i in range(len(df_all["Item"])):
