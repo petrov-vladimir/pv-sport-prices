@@ -1,5 +1,6 @@
-# pv-sport-prices
-Just a small program that helps you to keep track of the latest spot prices on "commodities"  in solar energy sector.
+# pv-spot-prices
+
+Just a small program that helps you to keep track of the latest spot prices on "commodities" in solar energy sector.
 
 The program gets the latest open-source data, checks if the data is relevant, processes it and writes to an .xlsx file. Raw data is also added to a separate sheet just in case.
 
