@@ -1,13 +1,5 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Feb 20 23:06:39 2020
-
-@author: Vladimir Petrov
-"""
-
 import pandas as pd
 from datetime import datetime as dt
-#import numpy as np
 from pathlib import Path
 from openpyxl import load_workbook
 from openpyxl import Workbook
@@ -169,8 +161,8 @@ df_all.drop(["Change(%)", "Change($)", "Price prediction for next week"],axis=1,
 df_all.reset_index(drop=True, inplace=True)
 df_all.rename(columns={'High':'High Price', 'Low':'Low Price','Average price':'Average Price'},  inplace=True)
 
-category_list=4*["Polysilicon"]+6*["Wafer"]+8*["Cell"]+6*["Module"]+6*["Module by region"]+["Module BOM Materials"]
-unit_list=4*["kg"]+6*["pc"]+20*["W"]+["m2"]
+category_list=4*["Polysilicon"]+6*["Wafer"]+8*["Cell"]+6*["Module"]+6*["Module by region"]+2*["Module BOM Materials"]
+unit_list=4*["kg"]+6*["pc"]+20*["W"]+2*["m2"]
 
 currency_list=[]
 for i in range(len(df_all["Item"])):
